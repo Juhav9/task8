@@ -1,0 +1,96 @@
+﻿@page "/chat"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject HubUrls HubUrls
+
+@if (chatMessage == null)
+{
+    
+}else
+{
+    <div class="chat">
+        <label>
+            User:
+            <input id="username" @bind="chatMessage!.User" />
+        </label>
+    </div>
+    <div class="chat">
+        <label>
+            Message:
+            <input id="themessage" @bind="chatMessage!.Message" />
+        </label>
+    </div>
+    <button id="submitthemessage" @onclick="Send" disabled="@(!isConnected)">Send</button>
+
+}
+
+@* TODO: populate received messages in following div *@
+@if(messages==null)
+{
+    
+}else
+{
+    <div id="messagelist">
+        @foreach (var item in messages)
+        {
+            <div class="alert">
+                @item.MessageTime
+            </div>
+            <div class="alert-success">
+                @item.User
+            </div>
+            <div class="messagenotification">
+                @item.Message
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    private HubConnection? hubConnection;
+    private ChatMessage? chatMessage;
+    private List<ChatMessageNotification> messages = new List<ChatMessageNotification>();
+    private DateTime? now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        chatMessage = new();
+
+        hubConnection = new HubConnectionBuilder()
+                            .WithUrl(Navigation.ToAbsoluteUri(HubUrls.ChatHubUrl))
+                            .Build();
+
+        hubConnection.On<ChatMessageNotification>("ChatMessageArrivedNotification", (message) =>
+        {
+            messages.Add(message);
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task Send()
+    {
+        if(hubConnection is not null)
+        {
+            now = DateTime.Now;
+            await hubConnection.SendAsync("SubmitChatMessage", now, chatMessage);
+        }
+    }
+    public bool isConnected => 
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if(hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+}
+@* 
+    TODO: implement client for chatter hub 
+    Use HubUrls.ChatHubUrl value as the hub's' url. This is needed so that the automated tests can be ran.
+*@

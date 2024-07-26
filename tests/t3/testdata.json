@@ -1,0 +1,21 @@
+[
+  {
+    "data": {
+      "Item1": "/appdata/weatherobservations",
+      "Item2": {
+        "date": "2023-04-25T12:13:14Z",
+        "observationText": "observation-1",
+        "temperatureC": "20",
+        "summary": "summary-1",
+        "observer": "observer-1"
+      }
+    },
+    "result": {
+      "date": "2023-04-25T12:13:14Z",
+      "observationText": "observation-1",
+      "temperatureC": "20",
+      "summary": "summary-1",
+      "observer": "observer-1"
+    }
+  }
+]

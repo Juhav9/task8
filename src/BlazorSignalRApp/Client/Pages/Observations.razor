@@ -1,0 +1,120 @@
+﻿@* TODO: set proper url to the page *@
+@page "/observations"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject HubUrls HubUrls
+
+@inject HubUrls HubUrls
+
+<h3>Observations</h3>
+
+<EditForm Model="observation" OnSubmit="Send">
+    <label>
+        Date: 
+        <InputDate @bind-Value="observation!.Date"/>
+    </label>
+    <label>
+        TemperatureC:
+        <InputNumber @bind-Value="observation!.TemperatureC" />
+    </label>
+    <label>
+        Summary:
+        <InputText id="summary" @bind-Value="observation!.Summary" />
+    </label>
+    <label>
+        ObservationText:
+        <InputText id="observationtext" @bind-Value="observation!.ObservationText" />
+    </label>
+    <label>
+        Observer
+        <InputText id="observer" @bind-Value="observation!.Observer" />
+    </label>
+    <button id="submit" type="submit" disabled="@(!isConnected)">Send</button>
+</EditForm>
+<table>
+    <tr>
+        <th>Date</th>
+        <th>TemperatureC</th>
+        <th>TemperatureF</th>
+        <th>Summary</th>
+    </tr>
+    @foreach(var item in weatherForecasts!)
+    {
+        <tr>
+            <td>@item.Date</td>
+            <td>@item.TemperatureC</td>
+            <td>@item.TemperatureF</td>
+            <td>@item.Summary</td>
+        </tr>
+    }
+</table>
+<div>
+    @foreach(var item in invalidOservations!)
+    {
+        <div class="invalid-observation">
+            @item.TemperatureC
+            @item.TemperatureF
+            @item.Summary
+            @item.Observer
+            @item.Date
+            @item.ObservationText
+        </div>
+    }
+
+</div>
+@code{
+    private HubConnection? hubConnection;
+    private Observation? observation { get; set; }
+    private List<WeatherForecast>? weatherForecasts = new List<WeatherForecast>();
+    private List<Observation>? invalidOservations = new List<Observation>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        observation = new();
+
+        hubConnection = new HubConnectionBuilder()
+                            .WithUrl(Navigation.ToAbsoluteUri(HubUrls.WeatherHubUrl))
+                            .Build();
+        hubConnection.On<WeatherForecast>("ValidWeatherObservations", (message) =>
+        {
+            weatherForecasts.Add(message);
+            StateHasChanged();
+        });
+        hubConnection.On<Observation>("InvalidObservationReceived", (message) =>
+        {
+            invalidOservations.Add(message);
+            StateHasChanged();
+        });
+        await hubConnection.StartAsync();
+    }
+
+
+    private async Task Send()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("StoreNewObservation", observation);
+        }
+    }
+    public bool isConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
+
+@* TODO: add nessesary usings and injects *@
+
+
+@* TODO: implement the UI *@
+
+
+@* 
+    TODO: implement client for observations hub 
+    Use HubUrls.WeatherHubUrl value as the hub's url. This is needed so that the automated tests can be ran.
+*@
